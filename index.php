@@ -27,6 +27,11 @@ $UserData = $App->getServerUserData();
 -->
 <a id="moneybutton" style="cursor:pointer;" onclick="sx.moneyRequest('https://testapp_tabletapps.stavox.net/_moneypost.php', 'min unikke token lol', 10000000)">CLICK HERE 2 GIVE ME MONEYZ</a>
 
+
+<!--
+    Dette lille stykke javascript registerer funktionen sx_MoneyRequestAccept(), som automatisk bliver kørt på klienten, når din app har modtaget post requesten med penge fra serveren. Tjek _moneypost.php for mere information om dette.
+    I dette eksempel, ændrer scriptet bare pengeknappens tekst til "thx 4 money"
+-->
 <script>
     function sx_MoneyRequestAccept(){
         document.getElementById('moneybutton').innerHTML = 'Thx 4 money'
