@@ -1,16 +1,19 @@
 <?php
 
-if(!isset($_SESSION)) {
+// Start en session hvis der ikke er nogen session i gang
+
+if(!isset($_SESSION)) { 
     session_start();
 }
 
-	/**
-	* Main class
-	*/
+// Class med vores funktioner
 
-	class App
+class App
 	{
-		private static $host = '127.0.0.1'; // Mysql host
+
+        // Indstillinger
+
+		private static $host = '127.0.0.1'; // Mysql host - 127.0.0.1 er altid en computers egen ip, og fungerer derfor også til dette, da vi gerne vil kontakte MySQL serveren der ligger på samme server
 		private static $user = ''; // Mysql user.
         private static $pass = ''; // Mysql password
         private static $defaultconn = ''; // Default mysql database
@@ -18,7 +21,10 @@ if(!isset($_SESSION)) {
         private static $port = '3306'; // Mysql port
         private static $ApiKey = ''; // Din apps api nøgle
 
-        public static $echodebug = true; // Echo debug information true/false. I din app bør du nok slå dette fra, medmindre du tester
+        public static $echodebug = false; // Echo debug information true/false. I din app bør du nok slå dette fra, medmindre du tester
+        public static $createdatabases = true; // Variabel der bestemmer om vi skal oprette vores eksempeltabeller. Sæt den til false når du har lavet tabellerne.
+
+        // Funktioner
 
 		function cleanInput($str){ // Input cleaning for bedre sikkerhed 
 			$str = trim($str);
@@ -37,9 +43,39 @@ if(!isset($_SESSION)) {
 			$DB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 			$DB->exec('set names utf8');
 
-			$this->dbConn[$connName] = $DB;
+            $this->dbConn[$connName] = $DB;
+            
+            if(self::$createdatabases){ // Simpel funktion der laver de krævede tabeller. Du kan bare slette dette hvis du ikke har brug for det
+                $this->createExampleSqlTables();
+            }
 
 			return $DB;
+        }
+
+        function createExampleSqlTables(){ // Simpel funktion der laver de krævede tabeller. Du kan bare slette dette hvis du ikke har brug for det
+            $this->getConnection()->query('CREATE TABLE IF NOT EXISTS `serveruserdata` (
+                `SteamID` VARCHAR(255) NOT NULL,
+                `Name` VARCHAR(255) NOT NULL,
+                `Rank` VARCHAR(255) NOT NULL,
+                `VIP` INT(11) NOT NULL,
+                `GangID` INT(11) NULL DEFAULT NULL,
+                `GangName` VARCHAR(255) NULL DEFAULT NULL,
+                `LastUpdated` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY (`SteamID`)
+            )
+            COLLATE="utf8_general_ci"
+            ENGINE=InnoDB
+            ;');
+
+            $this->getConnection()->query('CREATE TABLE IF NOT EXISTS`moneylog` (
+                `SteamID` VARCHAR(255) NOT NULL,
+                `Token` VARCHAR(255) NOT NULL,
+                `Amount` INT(11) NOT NULL,
+                PRIMARY KEY (`SteamID`)
+            )
+            COLLATE="utf8_general_ci"
+            ENGINE=InnoDB
+            ;');
         }
 
         function getApiKey(){ // Returnerer din api key (Defineret i toppen af denne fil)
@@ -72,7 +108,7 @@ if(!isset($_SESSION)) {
                 $resp['GangName'] = NULL;
             }
 
-            $stmt = $this->getConnection()->prepare('INSERT INTO serveruserdata (SteamID, Name, Rank, VIP, GangID, GangName) VALUES (:SteamID, :Name, :Rank, :VIP, :GangID, :GangName) ON DUPLICATE KEY UPDATE Name = :Name, Rank = :Rank, VIP = :VIP, GangID = :GangID, GangName = :GangName');
+            $stmt = $this->getConnection()->prepare('INSERT INTO `serveruserdata` (`SteamID`, `Name`, `Rank`, `VIP`, `GangID`, `GangName`) VALUES (:SteamID, :Name, :Rank, :VIP, :GangID, :GangName) ON DUPLICATE KEY UPDATE `Name` = :Name, `Rank` = :Rank, `VIP` = :VIP, `GangID` = :GangID, `GangName` = :GangName');
 
             // For guds skyld: Brug prepared statements. Det er hvad jeg gør i denne fil, og det er hvad du ALTID bør gøre.
 
@@ -146,15 +182,68 @@ if(!isset($_SESSION)) {
         }
 
         function echoHead(){ // Tilføjer din <head> block til din side, så du ikke behøver at lave den i alle dine html dokumenter
-            echo '';
+            echo '
+            <html lang="en">
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+                <meta name="description" content="">
+                <meta name="author" content="">
+                <link rel="icon" href="favicon.ico">
+            
+                <title>Bootstrap App Template</title>
+            
+                <!-- Bootstrap core CSS -->
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.min.css">
+            
+                <!-- Vores CSS -->
+                <link href="/css/style.css" rel="stylesheet">
+            </head>
+            <body>
+            ';
         }
 
-        function echoNav(){ // Tilføjer din navbar til din side, så du ikke behøver at lave den i alle dine html dokumenter
-            echo '';
+        function echoNav(){ // Tilføjer din navbar til din side, så du ikke behøver at lave den i alle dine html dokumenter. I dette eksempel bruger vi Bootstrap, så vi ikke rigtigt behøver at bruge tid på at lave et flot design.
+            echo '
+            <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+            <a class="navbar-brand" href="/">Min seje app</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarsExampleDefault" aria-controls="navbarsExampleDefault" aria-expanded="false" aria-label="Toggle navigation">
+              <span class="navbar-toggler-icon"></span>
+            </button>
+      
+            <div class="collapse navbar-collapse" id="navbarsExampleDefault">
+              <ul class="navbar-nav mr-auto">
+                <li class="nav-item active">
+                  <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="#">Link</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link disabled" href="#">Disabled</a>
+                </li>
+                <li class="nav-item dropdown">
+                  <a class="nav-link dropdown-toggle" id="dropdown01" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Dropdown</a>
+                  <div class="dropdown-menu" aria-labelledby="dropdown01">
+                    <a class="dropdown-item" href="#">Action</a>
+                    <a class="dropdown-item" href="#">Another action</a>
+                    <a class="dropdown-item" href="#">Something else here</a>
+                  </div>
+                </li>
+              </ul>
+            </div>
+          </nav>';
         }
 
         function echoFooter(){ // Tilføjer din footer til din side... bla bla bla
-            echo '';
+            echo '
+            <!-- Jquery og Bootstrap core javascript -->
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/js/bootstrap.min.js"></script>
+            <!-- Vores flotte javascript -->
+            <script src="/js/script.js"></script>
+            </body>
+            </html>';
         }
 
     }
