@@ -1,34 +1,37 @@
 <?php
+// This is the index/front page of your app. This is what will be shown to the user upon startup
 
-require('__app.php');
+// Requires our autoloading and classes
+require_once '__init.php';
 
-$App = new App();
+// Handle user sign-in
+User::i()->login();
 
-$App->DoLogin();
-
-$App->echoHead();
-
-$App->echoNav();
-
-$UserData = $App->getServerUserData();
+// Echo the <head> into our document
+Layout::i()->header();
 
 ?>
-
-<main role="main" class="container">
-
-    <div class="starter-template">
-        <h1 class="display-4">Hej <?php echo $UserData['Name'] ?></h1>
-
-        <p class="lead">Denne seje app er kun til at vise dig hvordan du kan lave din egen app. Den kan intet sejt.<br>Source koden er på min Github profil. Find den her: <b>https://github.com/emoyly/Stavox-Tablet-App-Template</b></p>
-
-        <button id="moneybutton" class="btn btn-primary">MoneyRequest</button>
-
-    </div>
-
-</main><!-- /.container -->
-
-
+<body>
 
 <?php
-    $App->echoFooter();
+// Echo our navbar
+Layout::i()->nav();
 ?>
+
+<div class="text-center">
+    <h1 class="display-4">This is my cool app.</h1>
+    <p class="lead">With my cool app you can give me money and let me spam you with notifications 😄</p>
+    <button id="purchase" class="btn btn-primary">Click here to purchase my shit</button>
+    <button id="notification" class="btn btn-warning">Or click here to get anotification</button>
+</div>
+
+<?php
+// Echo our footer and scripts
+Layout::i()->footer();
+?>
+
+<!-- Adding the Config::i()->getVersion() thing makes caching way easier to deal with. In development mode, the version will be a randomized string on each visit, to completely bypass the cache -->
+<script src="/assets/js/index.js?v=<?=Config::i()->getVersion()?>"></script>
+
+<!-- Remember to close the body again! -->
+</body>
