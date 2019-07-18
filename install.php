@@ -138,7 +138,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $toDelete = [
         'favicon.ico',
-        'stats',
         'robots.txt',
         'index.html',
         __FILE__,
