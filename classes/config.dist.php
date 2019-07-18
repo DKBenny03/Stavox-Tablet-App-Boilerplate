@@ -7,10 +7,8 @@ class Config
 
     /* MYSQL CONNECTION */
     private static $SQL = [
-        'host' => '%%SQLHOST%%',
         'user' => '%%SQLUSER%%',
-        'pass' => '%%SQLPORT"',
-        'port' => 3306,
+        'pass' => '%%SQLPASS"',
         'default_database' => '%%SQLDATABASE%%',
     ];
 

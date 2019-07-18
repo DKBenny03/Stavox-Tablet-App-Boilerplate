@@ -25,7 +25,7 @@ class SQL
         }
 
         // Create new MySQL-PDO connection
-        $DB = new PDO('mysql:host=' . $this->config['host'] . ';dbname=' . $connName . ';port=' . $this->config['port'].';charset=utf8mb4', $this->config['user'], $this->config['pass']);
+        $DB = new PDO('mysql:host=127.0.0.1;dbname=' . $connName . ';port=3306;charset=utf8mb4', $this->config['user'], $this->config['pass']);
         $DB->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         // Cache the connection for this view

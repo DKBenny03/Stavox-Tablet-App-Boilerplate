@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             'success' => false,
             'error' => 'sqlconn_failed',
             'msg' => $e->getMessage()
-        ])); 
+        ]));
     }
 
     // Download and unzip template from github
@@ -76,7 +76,23 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     $zip->close();
     unlink($destination);
-    unlink('Stavox-Tablet-App-Boilerplate-master/install.php');
+    $path = 'Stavox-Tablet-App-Boilerplate-master';
+    unlink($path.'/install.php');
+    $configfilepath = $path.'/classes/config.php';
+    rename($path.'/classes/config.dist.php', $configfilepath);
+
+    // Update the config file
+    $contents = file_get_contents($configfilepath);
+    $replace = [
+        'SQLUSER' => $SafeVars['sqluser'],
+        'SQLPASS' => $SafeVars['sqlpass'],
+        'SQLDATABASE' => $SafeVars['sqldatabase'],
+        'SXAPIKEY' => $SafeVars['sxapikey']
+    ];
+
+    foreach($replace as $Key => $Item){
+        $contents = str_replace('%'.$Key.'%', $Item, $contents);
+    }
 
     // Delete self
     unlink(__FILE__);
