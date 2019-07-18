@@ -6,16 +6,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         'sqluser' => true,
         'sqlpass' => true,
         'sqldatabase' => true,
-        'sxapikey' => true
+        'sxapikey' => true,
     ];
-    
+
     // Loop through our expected variables and make sure they're set and don't contain anything weird
-    foreach($ExpectedVars as $Key => $Item){
-        if(!isset($_POST[$Key]) || empty($_POST[$Key])){
+    foreach ($ExpectedVars as $Key => $Item) {
+        if (!isset($_POST[$Key]) || empty($_POST[$Key])) {
             die(json_encode([
                 'success' => false,
                 'error' => 'missing_arguments',
-                'msg' => $Key
+                'msg' => $Key,
             ]));
         }
 
@@ -26,13 +26,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Create database connection
     try {
-        $DBC = new PDO('mysql:host=127.0.0.1;dbname='.$SafeVars['sqldatabase'].';port=3306;charset=utf8mb4', $SafeVars['sqluser'], $SafeVars['sqlpass']);
+        $DBC = new PDO('mysql:host=127.0.0.1;dbname=' . $SafeVars['sqldatabase'] . ';port=3306;charset=utf8mb4', $SafeVars['sqluser'], $SafeVars['sqlpass']);
         $DBC->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     } catch (Exception $e) {
         die(json_encode([
             'success' => false,
             'error' => 'sqlconn_failed',
-            'msg' => $e->getMessage()
+            'msg' => $e->getMessage(),
         ]));
     }
 
@@ -47,28 +47,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
           created  DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
         )
         COMMENT \'This table stores all the users of your app. Feel free to add more columns.\';');
-    }
-    catch (Exception $e) {
+    } catch (Exception $e) {
         die(json_encode([
             'success' => false,
             'error' => 'sqlinit_failed',
-            'msg' => $e->getMessage()
+            'msg' => $e->getMessage(),
         ]));
     }
-
 
     // Download and unzip template from github
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, 'https://codeload.github.com/SaimorIVS/Stavox-Tablet-App-Boilerplate/zip/master');
     curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-    $data = curl_exec ($curl);
-    curl_close ($curl);
+    $data = curl_exec($curl);
+    curl_close($curl);
 
-    if(!$data){
+    if (!$data) {
         die(json_encode([
             'success' => false,
             'error' => 'download_failed',
-        ])); 
+        ]));
     }
 
     $destination = 'master.zip';
@@ -77,112 +75,145 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     fclose($file);
 
     $zip = new ZipArchive;
-    
+
     $res = $zip->open($destination);
-    if ($res !== TRUE) {
+    if ($res !== true) {
         die(json_encode([
             'success' => false,
             'error' => 'zip_open_failed',
-            'msg' => 'code '.$res
-        ])); 
+            'msg' => 'code ' . $res,
+        ]));
     }
 
     $res = $zip->extractTo('.');
-    if ($res != TRUE) {
+    if ($res != true) {
         die(json_encode([
             'success' => false,
             'error' => 'unzip_failed',
-        ])); 
+        ]));
     }
 
     $zip->close();
 
     $path = 'Stavox-Tablet-App-Boilerplate-master';
 
-    $configfilepath = $path.'/classes/config.php';
-    $res = rename($path.'/classes/config.dist.php', $configfilepath);
-    if(!$res){
+    $configfilepath = $path . '/classes/config.php';
+    $res = rename($path . '/classes/config.dist.php', $configfilepath);
+    if (!$res) {
         die(json_encode([
             'success' => false,
             'error' => 'config_rename_failed',
-        ])); 
+        ]));
     }
 
     // Update the config file
     $contents = file_get_contents($configfilepath);
-    if(!$contents){
+    if (!$contents) {
         die(json_encode([
             'success' => false,
             'error' => 'config_read_failed',
-        ])); 
+        ]));
     }
 
     $replace = [
         'SQLUSER' => $SafeVars['sqluser'],
         'SQLPASS' => $SafeVars['sqlpass'],
         'SQLDATABASE' => $SafeVars['sqldatabase'],
-        'SXAPIKEY' => $SafeVars['sxapikey']
+        'SXAPIKEY' => $SafeVars['sxapikey'],
     ];
 
-    foreach($replace as $Key => $Item){
-        $contents = str_replace('%%'.$Key.'%%', $Item, $contents);
+    foreach ($replace as $Key => $Item) {
+        $contents = str_replace('%%' . $Key . '%%', $Item, $contents);
     }
 
     $res = file_put_contents($configfilepath, $contents);
-    if(!$res){
+    if (!$res) {
         die(json_encode([
             'success' => false,
             'error' => 'config_write_failed',
-        ])); 
+        ]));
     }
 
-    $toDelete = [
-        'favicon.ico',
-        'robots.txt',
-        'index.html',
-        __FILE__,
-        $destination,
-        $path.'/install.php'
+    // File deletion
+    $DeleteBlacklist = [
+        '.' => true,
+        '..' => true,
+        'Stavox-Tablet-App-Boilerplate-master' => true,
     ];
+    $toDelete = scandir(__DIR___);
 
-    foreach($toDelete as $Key => $Item){
-        if(!file_exists($Item)){
+    array_push($DeleteBlacklist, $path . '/install.php');
+
+    // Function to recursively delete folders
+    function rrmdir($dir)
+    {
+        if (!is_dir($dir)) {
+            return false;
+        }
+        $objects = scandir($dir);
+        foreach ($objects as $object) {
+            if ($object != "." && $object != "..") {
+                $res = false;
+                if (is_dir($dir . "/" . $object)) {
+                    $res = rrmdir($dir . "/" . $object);
+                } else {
+                    $res = unlink($dir . "/" . $object);
+                }
+
+                if (!$res) {
+                    return false;
+                }
+            }
+        }
+        return rmdir($dir);
+    }
+
+    foreach ($toDelete as $Key => $Item) {
+        if (isset($DeleteBlacklist[$Item]) || !file_exists($Item)) {
             continue;
         }
 
-        $res = unlink($Item);
+        if (is_dir($Item)) {
+            $res = rrmdir($Item);
+        } else {
+            $res = unlink($Item);
+        }
 
-        if(!$res){
+        if (!$res) {
             die(json_encode([
                 'success' => false,
                 'error' => 'filedelete_failed',
-                'msg' => $Item
-            ])); 
+                'msg' => $Item,
+            ]));
         }
     }
 
     $dir = scandir($path);
-    if(!$dir){
+    if (!$dir) {
         die(json_encode([
             'success' => false,
             'error' => 'dirscan_failed',
-        ])); 
+        ]));
     }
 
-    foreach($dir as $Key => $Item){
-        if($Item == '..' || $Item == '.'){
+    // Move all files from the template into the root web folder
+    foreach ($dir as $Key => $Item) {
+        if ($Item == '..' || $Item == '.') {
             continue;
         }
 
-        $res = rename($path.'/'.$Item, $Item);
-        if(!$res){
+        $res = rename($path . '/' . $Item, $Item);
+        if (!$res) {
             die(json_encode([
                 'success' => false,
                 'error' => 'move_failed',
-                'msg' => $Item
-            ])); 
+                'msg' => $Item,
+            ]));
         }
     }
+
+    // Delete template folder
+    unlink($path);
 
     // Send response
     echo json_encode([
