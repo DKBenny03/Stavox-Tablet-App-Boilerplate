@@ -8,7 +8,7 @@ class Config
     /* MYSQL CONNECTION */
     private static $SQL = [
         'user' => '%%SQLUSER%%',
-        'pass' => '%%SQLPASS"',
+        'pass' => '%%SQLPASS%%',
         'default_database' => '%%SQLDATABASE%%',
     ];
 
@@ -18,7 +18,7 @@ class Config
     private static $InDevelopment = true;
 
     // Stavox API key
-    private static $SxApiKey = '%SXAPIKEY%';
+    private static $SxApiKey = '%%SXAPIKEY%%';
 
     // Everything below is simply some functions to get the data out from this file
 
