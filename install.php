@@ -140,7 +140,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         '..' => true,
         'Stavox-Tablet-App-Boilerplate-master' => true,
     ];
-    $toDelete = scandir(__DIR___);
+    $toDelete = scandir(__DIR__);
 
     array_push($DeleteBlacklist, $path . '/install.php');
 
@@ -213,7 +213,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     // Delete template folder
-    unlink($path);
+    rmdir($path);
 
     // Send response
     echo json_encode([
