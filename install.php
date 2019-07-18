@@ -162,12 +162,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         }
     }
 
-    $res = rename($path, '.');
-    if(!$res){
+    $dir = scandir($path);
+    if(!$dir){
         die(json_encode([
             'success' => false,
-            'error' => 'move_failed',
+            'error' => 'dirscan_failed',
         ])); 
+    }
+
+    foreach($dir as $Key => $Item){
+        if($Item == '..' || $Item == '.'){
+            continue;
+        }
+
+        $res = rename($path.'/'.$Item, $Item);
+        if(!$res){
+            die(json_encode([
+                'success' => false,
+                'error' => 'move_failed',
+                'msg' => $Item
+            ])); 
+        }
     }
 
     // Send response
@@ -229,12 +244,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             }
 
             $('#infoform').submit(e => {
+                e.preventDefault()
                 if(!installable){
                     return
                 }
                 installable = false
                 $('#installbutton').text('Installing...')
-                e.preventDefault()
                 $.post('', $('#infoform').serialize(), data => {
                     data = JSON.parse(data)
                     if(!data.success){
