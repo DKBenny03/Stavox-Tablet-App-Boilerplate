@@ -36,6 +36,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         ]));
     }
 
+    try {
+        $stmt = $DBC->query('CREATE TABLE IF NOT EXISTS users
+        (
+          steamid  VARCHAR(255)                       NOT NULL PRIMARY KEY,
+          name     VARCHAR(255)                       NOT NULL COMMENT \'RP name\',
+          `rank`   VARCHAR(255)                       NOT NULL COMMENT \'In-game rank (user, admin etc.)\',
+          vip      TINYINT(1)      DEFAULT 0                 NOT NULL COMMENT \'VIP status\',
+          lastseen DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL on update CURRENT_TIMESTAMP,
+          created  DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+        )
+        COMMENT \'This table stores all the users of your app. Feel free to add more columns.\';');
+    }
+    catch (Exception $e) {
+        die(json_encode([
+            'success' => false,
+            'error' => 'sqlinit_failed',
+            'msg' => $e->getMessage()
+        ]));
+    }
+
+
     // Download and unzip template from github
     $curl = curl_init();
     curl_setopt($curl, CURLOPT_URL, 'https://codeload.github.com/SaimorIVS/Stavox-Tablet-App-Boilerplate/zip/master');
@@ -75,14 +96,27 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
     $zip->close();
-    unlink($destination);
+
     $path = 'Stavox-Tablet-App-Boilerplate-master';
-    unlink($path.'/install.php');
+
     $configfilepath = $path.'/classes/config.php';
-    rename($path.'/classes/config.dist.php', $configfilepath);
+    $res = rename($path.'/classes/config.dist.php', $configfilepath);
+    if(!$res){
+        die(json_encode([
+            'success' => false,
+            'error' => 'config_rename_failed',
+        ])); 
+    }
 
     // Update the config file
     $contents = file_get_contents($configfilepath);
+    if(!$contents){
+        die(json_encode([
+            'success' => false,
+            'error' => 'config_read_failed',
+        ])); 
+    }
+
     $replace = [
         'SQLUSER' => $SafeVars['sqluser'],
         'SQLPASS' => $SafeVars['sqlpass'],
@@ -91,11 +125,50 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     ];
 
     foreach($replace as $Key => $Item){
-        $contents = str_replace('%'.$Key.'%', $Item, $contents);
+        $contents = str_replace('%%'.$Key.'%%', $Item, $contents);
     }
 
-    // Delete self
-    unlink(__FILE__);
+    $res = file_put_contents($configfilepath, $contents);
+    if(!$res){
+        die(json_encode([
+            'success' => false,
+            'error' => 'config_write_failed',
+        ])); 
+    }
+
+    $toDelete = [
+        'favicon.ico',
+        'stats',
+        'robots.txt',
+        'index.html',
+        __FILE__,
+        $destination,
+        $path.'/install.php'
+    ];
+
+    foreach($toDelete as $Key => $Item){
+        if(!file_exists($Item)){
+            continue;
+        }
+
+        $res = unlink($Item);
+
+        if(!$res){
+            die(json_encode([
+                'success' => false,
+                'error' => 'filedelete_failed',
+                'msg' => $Item
+            ])); 
+        }
+    }
+
+    $res = rename($path, '.');
+    if(!$res){
+        die(json_encode([
+            'success' => false,
+            'error' => 'move_failed',
+        ])); 
+    }
 
     // Send response
     echo json_encode([
@@ -146,7 +219,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 sqlconn_failed: 'Could not connect to database',
                 unzip_failed: 'Could not unzip template archive',
                 download_failed: 'Could not download template archive',
-                zip_open_failed: 'Could not open zip archive'
+                zip_open_failed: 'Could not open zip archive',
+                config_rename_failed: 'Could not rename config file',
+                config_read_failed: 'Could not read config file',
+                config_write_failed: 'Could not write new config file',
+                sqlinit_failed: 'Could not create default SQL tables',
+                filedelete_failed: 'Could not delete file',
+                move_failed: 'Could not move template contents to root web folder'
             }
 
             $('#infoform').submit(e => {
