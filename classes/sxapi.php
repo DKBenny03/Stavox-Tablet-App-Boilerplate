@@ -88,6 +88,16 @@ class SxApi
         ]);
     }
 
+    // Give money to a player
+    public function giveMoney($SteamID, $Amount)
+    {
+        // Call the api with the required arguments
+        return $this->call('givemoney', 'POST', [
+            'steamid' => $SteamID,
+            'amount' => $Amount
+        ]);
+    }
+
     // This function is used to validate any webhook calls from the Stavox webserver.
     // Currently, the only webhook available, is the one sent by the moneyRequest api.
     public function validateWebhookCall()

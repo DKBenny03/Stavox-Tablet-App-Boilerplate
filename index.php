@@ -21,8 +21,16 @@ Layout::i()->nav();
 <div class="text-center">
     <h1 class="display-4">This is my cool app.</h1>
     <p class="lead">With my cool app you can give me money and let me spam you with notifications 😄</p>
-    <button id="purchase" class="btn btn-primary">Click here to purchase my shit</button>
-    <button id="notification" class="btn btn-warning">Or click here to get anotification</button>
+    <button id="purchase" class="btn btn-primary">Send moneys</button>
+    <button id="notification" class="btn btn-warning">Send notification</button>
+    <button id="expression" class="btn btn-danger">Open Expression2</button>
+    <button id="dupe" class="btn btn-info">Save dupe</button>
+    <button id="givemoney" class="btn btn-secondary">Get 100 moneys from app</button>
+    <!-- Set tablet closeable checkbox -->
+    <div class="custom-control custom-checkbox mt-2">
+        <input type="checkbox" class="custom-control-input" id="tabletcloseable" checked>
+        <label class="custom-control-label" for="tabletcloseable">Allow tablet to be closed</label>
+    </div>
 </div>
 
 <?php
