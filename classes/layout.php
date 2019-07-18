@@ -41,7 +41,7 @@ class Layout
             </footer>
             <script src="/vendor/jquery-3.4.1/jquery.min.js"></script>
             <script src="/vendor/popper-1.14.7/popper.min.js"></script>
-            <script src="/vendor/bootstrap-4.3.1-min.js"></script>
+            <script src="/vendor/bootstrap-4.3.1/bootstrap.min.js"></script>
         <?php
     }
 
