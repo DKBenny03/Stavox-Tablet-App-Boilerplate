@@ -79,12 +79,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     try {
         $stmt = $DBC->query('CREATE TABLE IF NOT EXISTS users
         (
-          steamid  VARCHAR(255)                       NOT NULL PRIMARY KEY,
-          name     VARCHAR(255)                       NOT NULL COMMENT \'RP name\',
-          `rank`   VARCHAR(255)                       NOT NULL COMMENT \'In-game rank (user, admin etc.)\',
-          vip      TINYINT(1)      DEFAULT 0                 NOT NULL COMMENT \'VIP status\',
-          lastseen DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL on update CURRENT_TIMESTAMP,
-          created  DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
+          SteamID  VARCHAR(255)                              NOT NULL PRIMARY KEY,
+          Name     VARCHAR(255)                              NOT NULL COMMENT \'RP name\',
+          `Rank`   VARCHAR(255)                              NOT NULL COMMENT \'In-game rank (user, admin etc.)\',
+          VIP      TINYINT(1) DEFAULT 0                      NOT NULL COMMENT \'VIP status\',
+          GangID      INT(11) unsigned      DEFAULT NULL     NULL COMMENT \'Gang ID\',
+          LastSeen DATETIME DEFAULT CURRENT_TIMESTAMP        NOT NULL on update CURRENT_TIMESTAMP,
+          Created  DATETIME DEFAULT CURRENT_TIMESTAMP        NOT NULL
         )
         COMMENT \'This table stores all the users of your app. Feel free to add more columns.\';');
     } catch (Exception $e) {

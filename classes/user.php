@@ -26,36 +26,38 @@ class User
             }
 
             // Prepare a new SQL query to see if the user exists
-            $stmt = SQL::i()->conn()->prepare('SELECT * FROM users WHERE steamid = :steamid');
+            $stmt = SQL::i()->conn()->prepare('SELECT * FROM Users WHERE SteamID = :SteamID');
 
             // Bind the parameters to the query, so that we can use the parameters without worrying about SQL injections.
-            $stmt->bindParam(':steamid', $Login['SteamID']);
+            $stmt->bindParam(':SteamID', $Login['SteamID']);
 
             // Execute the SQL query
             $stmt->execute();
             $DBUser = $stmt->fetch();
 
-            if (isset($DBUser, $DBUser['steamid'])) { // Existing users
+            if (isset($DBUser, $DBUser['SteamID'])) { // Existing users
                 // Prepare new SQL query to update the users data
-                $stmt = SQL::i()->conn()->prepare('UPDATE users SET name = :name, vip = :vip, rank = :rank, lastseen = NOW() WHERE steamid = :steamid');
+                $stmt = SQL::i()->conn()->prepare('UPDATE Users SET Name = :Name, VIP = :VIP, Rank = :Rank, GangID = :GangID, LastSeen = NOW() WHERE SteamID = :SteamID');
 
                 // Bind the parameters to the query, so that we can use the parameters without worrying about SQL injections.
-                $stmt->bindParam(':steamid', $Login['SteamID']);
-                $stmt->bindParam(':name', $Login['Name']);
-                $stmt->bindParam(':vip', $Login['VIP']);
-                $stmt->bindParam(':rank', $Login['Rank']);
+                $stmt->bindParam(':SteamID', $Login['SteamID']);
+                $stmt->bindParam(':Name', $Login['Name']);
+                $stmt->bindParam(':VIP', $Login['VIP']);
+                $stmt->bindParam(':Rank', $Login['Rank']);
+                $stmt->bindParam(':GangID', $Login['GangID']);
                 
                 // Execute the SQL query
                 $stmt->execute();
             } else { // New users
                 // Prepare new SQL query to create the user in our local database
-                $stmt = SQL::i()->conn()->prepare('INSERT INTO users (steamid, name, vip, rank) VALUES(:steamid, :name, :vip, :rank)');
+                $stmt = SQL::i()->conn()->prepare('INSERT INTO Users (SteamID, Name, VIP, Rank, GangID) VALUES(:SteamID, :Name, :VIP, :Rank, :GangID)');
 
                 // Same as above
-                $stmt->bindParam(':steamid', $Login['SteamID']);
-                $stmt->bindParam(':name', $Login['Name']);
-                $stmt->bindParam(':vip', $Login['VIP']);
-                $stmt->bindParam(':rank', $Login['Rank']);
+                $stmt->bindParam(':SteamID', $Login['SteamID']);
+                $stmt->bindParam(':Name', $Login['Name']);
+                $stmt->bindParam(':VIP', $Login['VIP']);
+                $stmt->bindParam(':Rank', $Login['Rank']);
+                $stmt->bindParam(':GangID', $Login['GangID']);
                 
                 $stmt->execute();
             }
@@ -64,6 +66,7 @@ class User
             $_SESSION['APP_CACHE_NAME'] = $Login['Name'];
             $_SESSION['APP_CACHE_RANK'] = $Login['Rank'];
             $_SESSION['APP_CACHE_VIP'] = $Login['VIP'];
+            $_SESSION['APP_CACHE_GANGID'] = $Login['GangID'];
 
             // Insert steamid into the session, actually completing the login
             $_SESSION['APP_STEAMID'] = $Login['SteamID'];
@@ -77,17 +80,30 @@ class User
     public function getUserData($SteamID = null)
     {
         // If no SteamID is passed to the function, we'll just use the SteamID of the currently signed-in user
-        if (!isset($SteamID)) {
-            $SteamID = $this->getSteamID();
-        }
+        $SteamID = isset($SteamID) ? $SteamID : $this->getSteamID();
 
         // Prepare the SQL command
-        $stmt = SQL::i()->conn()->prepare('SELECT * FROM users WHERE steamid = :steamid');
+        $stmt = SQL::i()->conn()->prepare('SELECT * FROM Users WHERE SteamID = :SteamID');
         // Bind the SteamID parameter, so we can use it safely in our query
-        $stmt->bindParam(':steamid', $SteamID);
+        $stmt->bindParam(':SteamID', $SteamID);
         // Execute SQL
         $stmt->execute();
-        return $stmt->fetch();
+
+        $res = $stmt->fetch();
+
+        // Make sure its saved and it has been updated within the last 2 days. We don't really want any outdated info
+        if(isset($res, $res['Name']) && strtotime($res['LastSeen']) + (60 * 60 * 24 * 2) > time()){
+            return $res;
+        }
+
+        // If we haven't already saved the user to our database, ask the Stavox api for new data
+        $res = SxApi::i()->getPlayerDataFromSteamID($SteamID);
+
+        if(!$res['success']){
+            return [];
+        }
+
+        return $res;
     }
 
     // Get the SteamID of the currently logged in user
@@ -97,20 +113,46 @@ class User
     }
 
     // Get the RP name of the currently logged in user
-    public function getName()
+    public function getName($SteamID = null)
     {
-        return $_SESSION['APP_CACHE_NAME'];
+        $SteamID = isset($SteamID) ? $SteamID : $this->getSteamID();
+        if($SteamID === $this->getSteamID()){
+            return $_SESSION['APP_CACHE_NAME'];
+        }
+
+        return $this->getUserData($SteamID)['Name'];
     }
 
     // Get the in-game rank of the currently logged in user
-    public function getRank()
+    public function getRank($SteamID = null)
     {
-        return $_SESSION['APP_CACHE_RANK'];
+        $SteamID = isset($SteamID) ? $SteamID : $this->getSteamID();
+        if($SteamID === $this->getSteamID()){
+            return $_SESSION['APP_CACHE_RANK'];
+        }
+
+        return $this->getUserData($SteamID)['Rank'];
     }
 
     // Get the VIP status of the currently logged in user
-    public function getVIP()
+    public function getVIP($SteamID = null)
     {
-        return $_SESSION['APP_CACHE_VIP'];
+        $SteamID = isset($SteamID) ? $SteamID : $this->getSteamID();
+        if($SteamID === $this->getSteamID()){
+            return $_SESSION['APP_CACHE_VIP'];
+        }
+        
+        return $this->getUserData($SteamID)['Vip'];
+    }
+
+    // Gets the GangID of a player
+    public function getGangID($SteamID = null)
+    {
+        $SteamID = isset($SteamID) ? $SteamID : $this->getSteamID();
+        if($SteamID === $this->getSteamID()){
+            return $_SESSION['APP_CACHE_GANGID'];
+        }
+
+        return $this->getUserData($SteamID)['GangID'];
     }
 }

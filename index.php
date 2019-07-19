@@ -26,6 +26,7 @@ Layout::i()->nav();
     <button id="expression" class="btn btn-danger">Open Expression2</button>
     <button id="dupe" class="btn btn-info">Save dupe</button>
     <button id="givemoney" class="btn btn-secondary">Get 100 moneys from app</button>
+    <a href="/player.php" class="btn btn-primary">View my player data</a>
     <!-- Set tablet closeable checkbox -->
     <div class="custom-control custom-checkbox mt-2">
         <input type="checkbox" class="custom-control-input" id="tabletcloseable" checked>
