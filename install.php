@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Try creating our (very simple) database structure
     try {
-        $stmt = $DBC->query('CREATE TABLE IF NOT EXISTS users
+        $stmt = $DBC->query('CREATE TABLE IF NOT EXISTS Users
         (
           SteamID  VARCHAR(255)                              NOT NULL PRIMARY KEY,
           Name     VARCHAR(255)                              NOT NULL COMMENT \'RP name\',
