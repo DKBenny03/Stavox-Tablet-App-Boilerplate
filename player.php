@@ -1,5 +1,5 @@
 <?php
-// This is the index/front page of your app. This is what will be shown to the user upon startup
+// This is another page. This one shows details about the player, mainly the players gang
 
 // Requires our autoloading and classes
 require_once '__init.php';
