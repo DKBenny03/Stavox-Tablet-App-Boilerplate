@@ -36,7 +36,7 @@ class SQL
 
     // Get the columns of any table. Just a useful function you might need idk
     public function getColumns($table, $connName = null){
-		$stmt = $this->conn($connName)->prepare("DESCRIBE ".$table);
+		$stmt = $this->conn($connName)->query("DESCRIBE ".$table);
 		$stmt->execute();
 		$columns = $stmt->fetchAll(PDO::FETCH_COLUMN);
 		return $columns;
