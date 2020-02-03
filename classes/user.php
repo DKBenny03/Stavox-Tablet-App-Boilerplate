@@ -4,75 +4,85 @@ class User
 {
     use Singleton;
 
+    // Log in user with logintoken
+    public function doLogin(){
+        // If the token is somehow not set, we'll display this error
+        if (!isset($_GET['token']) || empty($_GET['token'])) {
+            Layout::i()->error('Login error', 'No login token was provided by client');
+            exit;
+        }
+
+        // Get the playerdata from the token
+        $Login = SxAPI::i()->getPlayerData($_GET['token']);
+
+        // If we couldn't login the user, display a nice error message
+        if (!$Login['success']) {
+            Layout::i()->error('Login error', 'Login failed with code ' . $Login['error']);
+            exit;
+        }
+
+        // Prepare a new SQL query to see if the user exists
+        $stmt = SQL::i()->conn()->prepare('SELECT * FROM Users WHERE SteamID = :SteamID');
+
+        // Bind the parameters to the query, so that we can use the parameters without worrying about SQL injections.
+        $stmt->bindParam(':SteamID', $Login['SteamID']);
+
+        // Execute the SQL query
+        $stmt->execute();
+        $DBUser = $stmt->fetch();
+
+        if (isset($DBUser, $DBUser['SteamID'])) { // Existing users
+            // Prepare new SQL query to update the users data
+            $stmt = SQL::i()->conn()->prepare('UPDATE Users SET Name = :Name, VIP = :VIP, Rank = :Rank, GangID = :GangID, LastSeen = NOW() WHERE SteamID = :SteamID');
+
+            // Bind the parameters to the query, so that we can use the parameters without worrying about SQL injections.
+            $stmt->bindParam(':SteamID', $Login['SteamID']);
+            $stmt->bindParam(':Name', $Login['Name']);
+            $stmt->bindParam(':VIP', $Login['VIP']);
+            $stmt->bindParam(':Rank', $Login['Rank']);
+            $stmt->bindParam(':GangID', $Login['GangID']);
+            
+            // Execute the SQL query
+            $stmt->execute();
+        } else { // New users
+            // Prepare new SQL query to create the user in our local database
+            $stmt = SQL::i()->conn()->prepare('INSERT INTO Users (SteamID, Name, VIP, Rank, GangID) VALUES(:SteamID, :Name, :VIP, :Rank, :GangID)');
+
+            // Same as above
+            $stmt->bindParam(':SteamID', $Login['SteamID']);
+            $stmt->bindParam(':Name', $Login['Name']);
+            $stmt->bindParam(':VIP', $Login['VIP']);
+            $stmt->bindParam(':Rank', $Login['Rank']);
+            $stmt->bindParam(':GangID', $Login['GangID']);
+            
+            $stmt->execute();
+        }
+
+        // Caching of frequently-used variables
+        $_SESSION['APP_CACHE_NAME'] = $Login['Name'];
+        $_SESSION['APP_CACHE_RANK'] = $Login['Rank'];
+        $_SESSION['APP_CACHE_VIP'] = $Login['VIP'];
+        $_SESSION['APP_CACHE_GANGID'] = $Login['GangID'];
+
+        // Insert steamid into the session, actually completing the login
+        $_SESSION['APP_STEAMID'] = $Login['SteamID'];
+        $_SESSION['APP_LOGINTIME'] = time();
+
+        return true;
+    }
+
     // Log in the user with either their session or their logintoken. You can change this as much as you want.
     public function login()
     {
         if (isset($_SESSION['APP_STEAMID']) && !empty($_SESSION['APP_STEAMID'])) { // If the user is logged in using the session
+            // If the user logged in more than one hour ago, re-authenticate to make sure all variables are up-to-date
+            if($_SESSION['APP_LOGINTIME'] + (60 * 60) < time()){
+                $_SESSION = [];
+                return $this->doLogin();
+            }
             return true;
         } else { // If the user is not logged in yet
-            // If the token is somehow not set, we'll display this error
-            if (!isset($_GET['token']) || empty($_GET['token'])) {
-                Layout::i()->error('Login error', 'No login token was provided by client');
-                exit;
-            }
-
-            // Get the playerdata from the token
-            $Login = SxAPI::i()->getPlayerData($_GET['token']);
-
-            // If we couldn't login the user, display a nice error message
-            if (!$Login['success']) {
-                Layout::i()->error('Login error', 'Login failed with code ' . $Login['error']);
-                exit;
-            }
-
-            // Prepare a new SQL query to see if the user exists
-            $stmt = SQL::i()->conn()->prepare('SELECT * FROM Users WHERE SteamID = :SteamID');
-
-            // Bind the parameters to the query, so that we can use the parameters without worrying about SQL injections.
-            $stmt->bindParam(':SteamID', $Login['SteamID']);
-
-            // Execute the SQL query
-            $stmt->execute();
-            $DBUser = $stmt->fetch();
-
-            if (isset($DBUser, $DBUser['SteamID'])) { // Existing users
-                // Prepare new SQL query to update the users data
-                $stmt = SQL::i()->conn()->prepare('UPDATE Users SET Name = :Name, VIP = :VIP, Rank = :Rank, GangID = :GangID, LastSeen = NOW() WHERE SteamID = :SteamID');
-
-                // Bind the parameters to the query, so that we can use the parameters without worrying about SQL injections.
-                $stmt->bindParam(':SteamID', $Login['SteamID']);
-                $stmt->bindParam(':Name', $Login['Name']);
-                $stmt->bindParam(':VIP', $Login['VIP']);
-                $stmt->bindParam(':Rank', $Login['Rank']);
-                $stmt->bindParam(':GangID', $Login['GangID']);
-                
-                // Execute the SQL query
-                $stmt->execute();
-            } else { // New users
-                // Prepare new SQL query to create the user in our local database
-                $stmt = SQL::i()->conn()->prepare('INSERT INTO Users (SteamID, Name, VIP, Rank, GangID) VALUES(:SteamID, :Name, :VIP, :Rank, :GangID)');
-
-                // Same as above
-                $stmt->bindParam(':SteamID', $Login['SteamID']);
-                $stmt->bindParam(':Name', $Login['Name']);
-                $stmt->bindParam(':VIP', $Login['VIP']);
-                $stmt->bindParam(':Rank', $Login['Rank']);
-                $stmt->bindParam(':GangID', $Login['GangID']);
-                
-                $stmt->execute();
-            }
-
-            // Caching of frequently-used variables
-            $_SESSION['APP_CACHE_NAME'] = $Login['Name'];
-            $_SESSION['APP_CACHE_RANK'] = $Login['Rank'];
-            $_SESSION['APP_CACHE_VIP'] = $Login['VIP'];
-            $_SESSION['APP_CACHE_GANGID'] = $Login['GangID'];
-
-            // Insert steamid into the session, actually completing the login
-            $_SESSION['APP_STEAMID'] = $Login['SteamID'];
-            $_SESSION['APP_LOGINTIME'] = time();
-
-            return true;
+            return $this->doLogin();
         }
     }
 
